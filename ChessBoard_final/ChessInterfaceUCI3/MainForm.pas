@@ -409,3 +409,98 @@ begin
   PositionEdit.Text := string(ChessBoard.FENPosition);
 end;
 
+procedure TForm1.ChangeEngineButtonClick(Sender: TObject);
+var
+  IniFile: TIniFile;
+begin
+  if not OpenDialog.Execute then
+    Exit;
+  IniFile := TIniFile.Create(ChangeFileExt(Application.ExeName, '.ini'));
+  try
+    IniFile.WriteString('UCIIntermediator', 'Engine', OpenDialog.FileName);
+    EngineFileName := OpenDialog.FileName;
+  finally
+    IniFile.Free;
+  end;
+  MessageDlg('The engine selection was saved. Restart the application to load it.',
+    mtInformation, [mbOK], 0);
+end;
+
+procedure TForm1.Button1Click(Sender: TObject);
+var
+  Moves: TStringList;
+  I: Integer;
+begin
+  Moves := TStringList.Create;
+  try
+    ExtractStrings([' ', ',', #9], [], PChar(MoveListEdit.Text), Moves);
+    for I := 0 to Moves.Count - 1 do
+      if not ChessBoard.Move(AnsiString(Moves[I])) then
+        Break;
+    PositionEdit.Text := string(ChessBoard.FENPosition);
+  finally
+    Moves.Free;
+  end;
+end;
+
+procedure TForm1.PieceButtonsClick(Sender: TObject);
+var
+  Piece: Byte;
+  PieceName: string;
+begin
+  PieceName := TButton(Sender).Caption;
+  ChessBoard.SetupMode := True;
+  ChessBoard.SetupDeleteMode := PieceName = 'X';
+  if ChessBoard.SetupDeleteMode then
+    Exit;
+
+  Piece := 0;
+  if PieceName = 'P' then Piece := WhitePawn
+  else if PieceName = 'R' then Piece := WhiteRook
+  else if PieceName = 'N' then Piece := WhiteKnight
+  else if PieceName = 'B' then Piece := WhiteBiShop
+  else if PieceName = 'K' then Piece := WhiteKing
+  else if PieceName = 'Q' then Piece := WhiteQueen
+  else if PieceName = 'p' then Piece := BlackPawn
+  else if PieceName = 'r' then Piece := BlackRook
+  else if PieceName = 'n' then Piece := BlackKnight
+  else if PieceName = 'b' then Piece := BlackBiShop
+  else if PieceName = 'k' then Piece := BlackKing
+  else if PieceName = 'q' then Piece := BlackQueen;
+  if Piece <> 0 then
+    ChessBoard.DragPiece(Piece);
+end;
+
+procedure TForm1.Button15Click(Sender: TObject);
+begin
+  ChessBoard.SetupMode := False;
+  ChessBoard.SetupDeleteMode := False;
+  ChessBoard.IsWhiteToMove := RadioGroup1.ItemIndex <> 1;
+  ChessBoard.InvalidateBoard;
+  StartFEN := ChessBoard.FENPosition;
+  GameMode := 2;
+  FMoveList.Clear;
+  PositionEdit.Text := string(StartFEN);
+end;
+
+procedure TForm1.Button16Click(Sender: TObject);
+begin
+  ChessBoard.SetupMode := True;
+  ChessBoard.SetupDeleteMode := False;
+  ChessBoard.ClearBoard;
+end;
+
+procedure TForm1.EngineMoveButtonClick(Sender: TObject);
+var
+  Command: AnsiString;
+begin
+  if GameMode = 1 then
+    Command := 'position startpos moves ' + AsciiLowerText(AnsiString(FMoveList.DelimitedText))
+  else
+    Command := 'position fen ' + StartFEN + ' moves ' + AsciiLowerText(AnsiString(FMoveList.DelimitedText));
+  EnginCommunicator.EngineCommand(Command + #13 + #10);
+  EnginCommunicator.EngineCommand(AnsiString('go movetime ' + IntToStr(SpinEdit1.Value)) + #13 + #10);
+end;
+
+end.
+

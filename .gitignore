@@ -1,0 +1,15 @@
+*.dcu
+*.local
+*.identcache
+*.map
+*.tds
+*.drc
+*.log
+__history/
+Win32/
+Win64/
+.vs/
+dist/
+Thumbs.db
+Desktop.ini
+
